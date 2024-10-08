@@ -7,4 +7,6 @@ import sangcci.springsecuritytest.user.domain.User;
 public interface UserJpaRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUsername(String username);
+
+    boolean existsByUsername(String username);
 }

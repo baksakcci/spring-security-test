@@ -1,4 +1,4 @@
-package sangcci.springsecuritytest.auth.security;
+package sangcci.springsecuritytest.auth.application;
 
 import java.util.HashSet;
 import lombok.RequiredArgsConstructor;

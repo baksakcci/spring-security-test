@@ -14,9 +14,15 @@ import org.springframework.security.config.annotation.web.configurers.CsrfConfig
 import org.springframework.security.config.annotation.web.configurers.FormLoginConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HttpBasicConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
+import sangcci.springsecuritytest.auth.application.JwtProvider;
+import sangcci.springsecuritytest.auth.filter.JwtAuthenticationFilter;
+import sangcci.springsecuritytest.auth.presentation.LoginFailureHandler;
+import sangcci.springsecuritytest.auth.presentation.LoginSuccessHandler;
 
 @Configuration
 @EnableMethodSecurity
@@ -34,20 +40,25 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http
+    public SecurityFilterChain filterChain(HttpSecurity http,
+            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+        http
                 .csrf(CsrfConfigurer<HttpSecurity>::disable)
                 .formLogin(FormLoginConfigurer<HttpSecurity>::disable)
                 .httpBasic(HttpBasicConfigurer<HttpSecurity>::disable)
                 .headers(it -> it.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+                .sessionManagement(it ->
+                        it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(authorize -> authorize
                             .requestMatchers("/api/auth/**").permitAll()
                             .requestMatchers("/h2-console/**").permitAll()
                             .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                             .anyRequest().authenticated()
                 )
-                .httpBasic(AbstractHttpConfigurer::disable)
-                .build();
+                .httpBasic(AbstractHttpConfigurer::disable);
+        http.addFilterAfter(jwtAuthenticationFilter, LogoutFilter.class);
+        return http.build();
     }
 
     @Bean
@@ -59,4 +70,14 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager, JwtProvider jwtProvider) {
+        JwtAuthenticationFilter authenticationFilter = new JwtAuthenticationFilter();
+        authenticationFilter.setAuthenticationManager(authenticationManager);
+        authenticationFilter.setAuthenticationSuccessHandler(new LoginSuccessHandler(jwtProvider));
+        authenticationFilter.setAuthenticationFailureHandler(new LoginFailureHandler());
+        return authenticationFilter;
+    }
+
 }

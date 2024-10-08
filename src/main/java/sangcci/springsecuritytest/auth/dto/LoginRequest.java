@@ -1,6 +1,6 @@
 package sangcci.springsecuritytest.auth.dto;
 
-public record LoginRequestDto(
+public record LoginRequest(
         String username,
         String password
 ) {
