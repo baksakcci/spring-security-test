@@ -1,5 +1,6 @@
 package sangcci.springsecuritytest.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,12 +22,18 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import sangcci.springsecuritytest.auth.application.JwtProvider;
 import sangcci.springsecuritytest.auth.filter.JwtAuthenticationFilter;
+import sangcci.springsecuritytest.auth.filter.JwtAuthorizationFilter;
+import sangcci.springsecuritytest.auth.presentation.JwtAuthenticationEntryPoint;
 import sangcci.springsecuritytest.auth.presentation.LoginFailureHandler;
 import sangcci.springsecuritytest.auth.presentation.LoginSuccessHandler;
 
 @Configuration
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final JwtAuthorizationFilter jwtAuthorizationFilter;
 
     /**
      * 이 메서드는 정적 자원에 대해 보안을 적용하지 않도록 설정한다.
@@ -57,7 +64,11 @@ public class SecurityConfig {
                             .anyRequest().authenticated()
                 )
                 .httpBasic(AbstractHttpConfigurer::disable);
+
+        http.exceptionHandling( exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint));
+
         http.addFilterAfter(jwtAuthenticationFilter, LogoutFilter.class);
+        http.addFilterBefore(jwtAuthorizationFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 
@@ -79,5 +90,4 @@ public class SecurityConfig {
         authenticationFilter.setAuthenticationFailureHandler(new LoginFailureHandler());
         return authenticationFilter;
     }
-
 }
