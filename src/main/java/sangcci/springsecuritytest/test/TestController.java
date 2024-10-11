@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TestController {
 
+    //@PreAuthorize(value = "Role.ADMIN")
     @GetMapping("/admin")
     public ResponseEntity<String> callAdmin() {
         return ResponseEntity.ok("admin yeah!");
     }
 
+    //@PreAuthorize(value = "Role.USER")
     @GetMapping
     public ResponseEntity<String> callUser() {
         return ResponseEntity.ok("user yeah!");

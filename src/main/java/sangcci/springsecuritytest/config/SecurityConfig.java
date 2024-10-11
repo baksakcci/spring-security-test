@@ -5,6 +5,8 @@ import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -23,7 +25,8 @@ import org.springframework.security.web.authentication.logout.LogoutFilter;
 import sangcci.springsecuritytest.auth.application.JwtProvider;
 import sangcci.springsecuritytest.auth.filter.JwtAuthenticationFilter;
 import sangcci.springsecuritytest.auth.filter.JwtAuthorizationFilter;
-import sangcci.springsecuritytest.auth.presentation.JwtAuthenticationEntryPoint;
+import sangcci.springsecuritytest.auth.presentation.CustomAccessDeniedHandler;
+import sangcci.springsecuritytest.auth.presentation.CustomAuthenticationEntryPoint;
 import sangcci.springsecuritytest.auth.presentation.LoginFailureHandler;
 import sangcci.springsecuritytest.auth.presentation.LoginSuccessHandler;
 
@@ -32,13 +35,16 @@ import sangcci.springsecuritytest.auth.presentation.LoginSuccessHandler;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private static final String[] ALLOW_URLS = {"/h2-console/**"};
+    private static final String[] AUTH_URLS = {"/api/auth/**"};
+
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+    private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
 
     /**
-     * 이 메서드는 정적 자원에 대해 보안을 적용하지 않도록 설정한다.
-     * 정적 자원은 보통 HTML, CSS, JavaScript, 이미지 파일 등을 의미하며,
-     * 이들에 대해 보안을 적용하지 않음으로써 성능을 향상시킬 수 있다.
+     * 이 메서드는 정적 자원에 대해 보안을 적용하지 않도록 설정한다. 정적 자원은 보통 HTML, CSS, JavaScript, 이미지 파일 등을 의미하며, 이들에 대해 보안을 적용하지 않음으로써 성능을
+     * 향상시킬 수 있다.
      */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
@@ -47,8 +53,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http,
-            JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtAuthenticationFilter
+    ) throws Exception {
         http
                 .csrf(CsrfConfigurer<HttpSecurity>::disable)
                 .formLogin(FormLoginConfigurer<HttpSecurity>::disable)
@@ -58,18 +66,32 @@ public class SecurityConfig {
                         it.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                            .requestMatchers("/api/auth/**").permitAll()
-                            .requestMatchers("/h2-console/**").permitAll()
-                            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                            .anyRequest().authenticated()
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(AUTH_URLS).permitAll()
+                        .requestMatchers(ALLOW_URLS).permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/manager/**").hasRole("MANAGER")
+                        .anyRequest().authenticated()
                 )
                 .httpBasic(AbstractHttpConfigurer::disable);
 
-        http.exceptionHandling( exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint));
+        http
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthenticationEntryPoint))
+                .exceptionHandling(exception -> exception.accessDeniedHandler(customAccessDeniedHandler));
 
-        http.addFilterAfter(jwtAuthenticationFilter, LogoutFilter.class);
-        http.addFilterBefore(jwtAuthorizationFilter, JwtAuthenticationFilter.class);
+        http
+                .addFilterAfter(jwtAuthenticationFilter, LogoutFilter.class)
+                .addFilterBefore(jwtAuthorizationFilter, JwtAuthenticationFilter.class);
+
         return http.build();
+    }
+
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.fromHierarchy("""
+                ROLE_ADMIN > ROLE_MANAGER
+                ROLE_MANAGER > ROLE_TEAM
+                """);
     }
 
     @Bean
@@ -83,7 +105,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(AuthenticationManager authenticationManager, JwtProvider jwtProvider) {
+    public JwtAuthenticationFilter jwtAuthenticationFilter(
+            AuthenticationManager authenticationManager,
+            JwtProvider jwtProvider
+    ) {
         JwtAuthenticationFilter authenticationFilter = new JwtAuthenticationFilter();
         authenticationFilter.setAuthenticationManager(authenticationManager);
         authenticationFilter.setAuthenticationSuccessHandler(new LoginSuccessHandler(jwtProvider));
