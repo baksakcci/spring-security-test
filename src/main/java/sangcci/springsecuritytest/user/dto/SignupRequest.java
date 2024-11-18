@@ -1,6 +1,6 @@
 package sangcci.springsecuritytest.user.dto;
 
-import sangcci.springsecuritytest.user.domain.User;
+import sangcci.springsecuritytest.user.domain.Member;
 
 public record SignupRequest(
         String username,
@@ -9,8 +9,8 @@ public record SignupRequest(
         String nickname
 ) {
 
-    public User toEntity(String encodedPassword) {
-        return User.builder()
+    public Member toEntity(String encodedPassword) {
+        return Member.builder()
                 .username(username)
                 .password(encodedPassword)
                 .email(email)

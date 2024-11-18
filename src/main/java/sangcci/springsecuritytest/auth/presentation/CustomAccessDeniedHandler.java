@@ -5,10 +5,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
+import sangcci.springsecuritytest.common.exception.code.GlobalErrorCode;
 import sangcci.springsecuritytest.common.response.Response;
 
 @Component
@@ -24,7 +24,10 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response,
             AccessDeniedException accessDeniedException) throws IOException, ServletException {
 
-        Response errorResponse = Response.error(HttpStatus.FORBIDDEN, "접근이 거부되었습니다.");
+        Response<GlobalErrorCode> errorResponse = Response.onFailure(
+                GlobalErrorCode.ACCESS_DENIED.getErrorCode().code(),
+                GlobalErrorCode.ACCESS_DENIED.getErrorCode().message()
+        );
 
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setCharacterEncoding("UTF-8");

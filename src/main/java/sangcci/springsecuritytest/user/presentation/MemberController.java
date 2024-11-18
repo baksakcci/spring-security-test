@@ -6,21 +6,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import sangcci.springsecuritytest.user.application.UserAppender;
+import sangcci.springsecuritytest.user.application.MemberService;
 import sangcci.springsecuritytest.user.dto.SignupRequest;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-public class UserController {
+public class MemberController {
 
-    private final UserAppender userAppender;
+    private final MemberService memberService;
 
     @PostMapping("/signup")
     public ResponseEntity<Void> signup(
             @RequestBody SignupRequest signupRequest
     ) {
-        userAppender.create(signupRequest);
+        memberService.create(signupRequest);
 
         return ResponseEntity.noContent()
                 .build();

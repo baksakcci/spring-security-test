@@ -2,6 +2,8 @@ package sangcci.springsecuritytest.user.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,10 +19,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "users")
+@Table(name = "members")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public class User {
+public class Member {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,21 +33,31 @@ public class User {
     private String password;
     @Column(nullable = false, unique = true)
     private String email;
+    @Enumerated(EnumType.STRING)
+    private SocialType socialType;
     private String nickname;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "users_roles",
-            joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
+            name = "members_roles",
+            joinColumns = @JoinColumn(name = "member_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
     )
     private Set<Role> roles;
 
     @Builder
-    private User(String username, String password, String email, String nickname, Set<Role> roles) {
+    private Member(
+            String username,
+            String password,
+            String email,
+            SocialType socialType,
+            String nickname,
+            Set<Role> roles
+    ) {
         this.username = username;
         this.password = password;
         this.email = email;
+        this.socialType = socialType;
         this.nickname = nickname;
         this.roles = roles;
     }
