@@ -10,6 +10,9 @@ import javax.crypto.SecretKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import sangcci.springsecuritytest.auth.exception.ExpiredJwtTokenException;
+import sangcci.springsecuritytest.auth.exception.InvalidJwtSignatureException;
+import sangcci.springsecuritytest.auth.exception.InvalidJwtTokenException;
 
 @Slf4j
 @Component
@@ -21,22 +24,20 @@ public class JwtValidator {
         this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64URL.decode(secretKey));
     }
 
-    public boolean validateToken(String token) {
+    public void validateToken(String token) {
         try {
             Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
                     .parse(token);
         } catch (MalformedJwtException e) {
-            log.info("Invalid JWT token");
-            return false;
+            throw new InvalidJwtTokenException();
         } catch (SignatureException e) {
-            log.info("Invalid JWT signature: {}", e.getMessage());
-            return false;
+            throw new InvalidJwtSignatureException();
         } catch (ExpiredJwtException e) {
-            log.info("Expired JWT token");
-            return false;
+            throw new ExpiredJwtTokenException();
         }
-        return true;
     }
+
+    // TODO: refresh Token 검증 (redis 활용)
 }

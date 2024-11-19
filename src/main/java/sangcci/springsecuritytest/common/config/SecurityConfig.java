@@ -18,39 +18,40 @@ import org.springframework.security.config.annotation.web.configurers.HttpBasicC
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.logout.LogoutFilter;
-import sangcci.springsecuritytest.auth.util.JwtProvider;
+import sangcci.springsecuritytest.auth.exception.JwtExceptionFilter;
 import sangcci.springsecuritytest.auth.filter.JwtAuthenticationFilter;
 import sangcci.springsecuritytest.auth.filter.JwtAuthorizationFilter;
-import sangcci.springsecuritytest.auth.oauth2.application.CustomOAuth2UserService;
-import sangcci.springsecuritytest.auth.oauth2.handler.OAuth2LoginFailureHandler;
-import sangcci.springsecuritytest.auth.oauth2.handler.OAuth2LoginSuccessHandler;
 import sangcci.springsecuritytest.auth.handler.CustomAccessDeniedHandler;
 import sangcci.springsecuritytest.auth.handler.CustomAuthenticationEntryPoint;
 import sangcci.springsecuritytest.auth.handler.LoginFailureHandler;
 import sangcci.springsecuritytest.auth.handler.LoginSuccessHandler;
+import sangcci.springsecuritytest.auth.oauth2.application.CustomOAuth2UserService;
+import sangcci.springsecuritytest.auth.oauth2.handler.OAuth2LoginFailureHandler;
+import sangcci.springsecuritytest.auth.oauth2.handler.OAuth2LoginSuccessHandler;
+import sangcci.springsecuritytest.auth.util.JwtProvider;
 
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private static final String[] ALLOW_URLS = {"/h2-console/**"};
-    private static final String[] AUTH_URLS = {"/api/auth/**"};
+    private static final String[] ALLOW_URLS = {"/h2-console/**"}; // 허용
+    private static final String[] AUTH_URLS = {"/api/auth/**", "/api/v1/oauth2/login/**", "/login/oauth2/**"}; // login 등
 
     // JWT
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
+    private final JwtExceptionFilter jwtExceptionFilter;
     // OAuth2
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
     /**
-     * 이 메서드는 정적 자원에 대해 보안을 적용하지 않도록 설정한다. 정적 자원은 보통 HTML, CSS, JavaScript, 이미지 파일 등을 의미하며, 이들에 대해 보안을 적용하지 않음으로써 성능을
-     * 향상시킬 수 있다.
+     * 정적 자원 허용 설정
      */
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
@@ -78,20 +79,25 @@ public class SecurityConfig {
                 )
                 .httpBasic(AbstractHttpConfigurer::disable);
 
-        http
-                .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthenticationEntryPoint))
-                .exceptionHandling(exception -> exception.accessDeniedHandler(customAccessDeniedHandler));
-
-        http
-                .addFilterAfter(jwtAuthenticationFilter, LogoutFilter.class)
-                .addFilterBefore(jwtAuthorizationFilter, JwtAuthenticationFilter.class);
-
+        // OAuth2 인증
         http
                 .oauth2Login(customConfigurer -> customConfigurer
                         .authorizationEndpoint(end -> end.baseUri("/api/v1/oauth2/login"))
                         .userInfoEndpoint(endPointConfig -> endPointConfig.userService(customOAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler(oAuth2LoginFailureHandler));
+
+        // jwt 인증 및 인가 필터
+        http
+                .addFilterBefore(jwtAuthenticationFilter, OAuth2LoginAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthorizationFilter, JwtAuthenticationFilter.class);
+        http
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthenticationEntryPoint))
+                .exceptionHandling(exception -> exception.accessDeniedHandler(customAccessDeniedHandler));
+
+        // jwt validation exception 처리 전용 필터
+        http
+                .addFilterBefore(jwtExceptionFilter, JwtAuthorizationFilter.class);
 
         return http.build();
     }

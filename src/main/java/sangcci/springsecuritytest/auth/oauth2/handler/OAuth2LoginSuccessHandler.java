@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -29,26 +30,43 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
             throws IOException, ServletException {
-        // 1 - OAuth2 인증된 사용자 정보 가져오기
+        // OAuth2 인증된 사용자 정보 가져오기
         PrincipalDetails oAuth2User = (PrincipalDetails) authentication.getPrincipal();
         Member member = oAuth2User.member();
+
+        // token 생성
+        String accessToken = jwtProvider.generateAccessToken(member.getEmail());
+        String refreshToken = jwtProvider.generateRefreshToken(member.getEmail());
 
         ObjectMapper objectMapper = new ObjectMapper();
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
 
-        // 2 - access token 생성
-        String accessToken = jwtProvider.generate(member.getEmail());
-
-        // 3 - access token 응답
-        TokenResponse tokenResponse = TokenResponse.of(accessToken);
+        // access token 응답객체 생성
+        TokenResponse tokenResponse = TokenResponse.of(accessToken, refreshToken, jwtProvider.getREFRESH_TIME());
 
         // TODO: db or cache에 RefreshToken 저장
 
-        // TODO: refreshToken 쿠키 등록
+        // refreshToken 쿠키 등록
+        setHeader(response, refreshToken);
 
         Response<TokenResponse> apiResponse = Response.onSuccess(tokenResponse);
         String jsonResponse = objectMapper.writeValueAsString(apiResponse);
         response.getWriter().write(jsonResponse);
+    }
+
+    public void setHeader(HttpServletResponse response, String refreshToken) {
+        if (refreshToken != null) {
+            response.addHeader("refresh_token", refreshToken);
+            response.addHeader("Set-Cookie", createRefreshToken(refreshToken).toString());
+        }
+    }
+
+    public static ResponseCookie createRefreshToken(String refreshToken) {
+        return ResponseCookie.from("refreshToken", refreshToken)
+                .path("/")
+                .maxAge(14 * 24 * 60 * 60 * 1000)
+                .httpOnly(true)
+                .build();
     }
 }

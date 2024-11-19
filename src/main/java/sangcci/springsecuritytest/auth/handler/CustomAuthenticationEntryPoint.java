@@ -5,12 +5,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
 import sangcci.springsecuritytest.common.exception.code.GlobalErrorCode;
 import sangcci.springsecuritytest.common.response.Response;
 
+@Slf4j
 @Component
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
@@ -23,6 +25,8 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException authException) throws IOException, ServletException {
+
+        log.info(authException.getMessage());
 
         Response<GlobalErrorCode> errorResponse = Response.onFailure(
                 GlobalErrorCode.UNAUTHORIZED_ERROR.getErrorCode().code(),
