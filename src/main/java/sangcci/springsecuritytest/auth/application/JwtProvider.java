@@ -6,7 +6,6 @@ import io.jsonwebtoken.security.Keys;
 import java.util.Date;
 import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -24,14 +23,12 @@ public class JwtProvider {
         this.accessTokenExpirationDate = accessTokenExpirationDate;
     }
 
-    public String generate(Authentication authentication) {
-        String username = authentication.getName();
-
+    public String generate(String email) {
         Date currentDate = new Date();
         Date expireDate = new Date(currentDate.getTime() + accessTokenExpirationDate);
 
         return Jwts.builder()
-                .subject(username)
+                .subject(email)
                 .issuedAt(currentDate)
                 .expiration(expireDate)
                 .signWith(secretKey)

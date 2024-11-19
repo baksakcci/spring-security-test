@@ -20,7 +20,7 @@ public class LoginFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
-        Response errorResponse = Response.error(HttpStatus.BAD_REQUEST, "로그인에 실패했습니다.");
+        Response<Void> errorResponse = Response.onFailure(HttpStatus.BAD_REQUEST.toString(), "로그인에 실패했습니다.");
 
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         response.setCharacterEncoding("UTF-8");

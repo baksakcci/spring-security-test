@@ -1,4 +1,4 @@
-package sangcci.springsecuritytest.auth.dto;
+package sangcci.springsecuritytest.auth.request;
 
 public record LoginRequest(
         String username,

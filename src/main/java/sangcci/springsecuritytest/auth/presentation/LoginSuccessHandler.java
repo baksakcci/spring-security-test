@@ -17,7 +17,7 @@ public class LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         // 인증 성공 - JWT 발급
-        String accessToken = jwtProvider.generate(authentication);
+        String accessToken = jwtProvider.generate(authentication.getName());
         response.setStatus(HttpServletResponse.SC_OK);
         response.setHeader("Authorization", accessToken);
     }
