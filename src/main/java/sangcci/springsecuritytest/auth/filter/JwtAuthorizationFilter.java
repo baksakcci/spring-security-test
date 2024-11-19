@@ -14,8 +14,8 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import sangcci.springsecuritytest.auth.application.JwtParser;
-import sangcci.springsecuritytest.auth.application.JwtValidator;
+import sangcci.springsecuritytest.auth.util.JwtParser;
+import sangcci.springsecuritytest.auth.util.JwtValidator;
 
 @Component
 @RequiredArgsConstructor
@@ -37,10 +37,10 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             jwtValidator.validateToken(token);
 
             // 3 - token extract to username
-            String username = jwtParser.extractUsername(token);
+            String email = jwtParser.extractUsername(token);
 
             // 4 - extract user from userDetailsService
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
             // 5 - generate AuthenticationToken
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(

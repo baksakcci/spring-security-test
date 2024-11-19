@@ -1,13 +1,11 @@
 package sangcci.springsecuritytest.auth.application;
 
-import java.util.Collections;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
+import sangcci.springsecuritytest.auth.dto.PrincipalDetails;
 import sangcci.springsecuritytest.user.domain.Member;
 import sangcci.springsecuritytest.user.exception.MemberNotFoundException;
 import sangcci.springsecuritytest.user.infra.MemberJpaRepository;
@@ -23,10 +21,6 @@ public class JpaUserDetailsService implements UserDetailsService {
         Member member = memberJpaRepository.findByEmail(email)
                 .orElseThrow(MemberNotFoundException::new);
 
-        return new User(
-                member.getEmail(),
-                member.getPassword(),
-                Collections.singleton(new SimpleGrantedAuthority(member.getRole().getText()))
-        );
+        return new PrincipalDetails(member, null);
     }
 }

@@ -1,4 +1,4 @@
-package sangcci.springsecuritytest.auth.oauth2;
+package sangcci.springsecuritytest.auth.oauth2.dto;
 
 import java.util.Map;
 import lombok.Builder;

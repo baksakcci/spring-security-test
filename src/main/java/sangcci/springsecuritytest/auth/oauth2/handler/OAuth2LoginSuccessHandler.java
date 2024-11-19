@@ -9,9 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import sangcci.springsecuritytest.auth.application.JwtProvider;
 import sangcci.springsecuritytest.auth.dto.PrincipalDetails;
 import sangcci.springsecuritytest.auth.response.TokenResponse;
+import sangcci.springsecuritytest.auth.util.JwtProvider;
 import sangcci.springsecuritytest.common.response.Response;
 import sangcci.springsecuritytest.user.domain.Member;
 
@@ -43,7 +43,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         // 3 - access token 응답
         TokenResponse tokenResponse = TokenResponse.of(accessToken);
 
-        // TODO: db or cache에 RefreshToken 저장 - 추후에 진행
+        // TODO: db or cache에 RefreshToken 저장
 
         // TODO: refreshToken 쿠키 등록
 

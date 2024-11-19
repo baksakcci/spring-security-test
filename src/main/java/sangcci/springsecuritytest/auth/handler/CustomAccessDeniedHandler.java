@@ -1,4 +1,4 @@
-package sangcci.springsecuritytest.auth.presentation;
+package sangcci.springsecuritytest.auth.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;

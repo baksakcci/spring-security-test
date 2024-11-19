@@ -1,4 +1,4 @@
-package sangcci.springsecuritytest.auth.presentation;
+package sangcci.springsecuritytest.auth.handler;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -7,7 +7,7 @@ import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
-import sangcci.springsecuritytest.auth.application.JwtProvider;
+import sangcci.springsecuritytest.auth.util.JwtProvider;
 
 @RequiredArgsConstructor
 public class LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -18,6 +18,7 @@ public class LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
         // 인증 성공 - JWT 발급
         String accessToken = jwtProvider.generate(authentication.getName());
+
         response.setStatus(HttpServletResponse.SC_OK);
         response.setHeader("Authorization", accessToken);
     }

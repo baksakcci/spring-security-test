@@ -8,7 +8,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sangcci.springsecuritytest.auth.oauth2.OAuth2UserInfo;
+import sangcci.springsecuritytest.auth.oauth2.dto.OAuth2UserInfo;
 import sangcci.springsecuritytest.auth.dto.PrincipalDetails;
 import sangcci.springsecuritytest.auth.oauth2.exception.UnsupportedProviderException;
 import sangcci.springsecuritytest.user.domain.Member;

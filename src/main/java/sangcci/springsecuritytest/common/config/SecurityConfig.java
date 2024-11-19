@@ -20,16 +20,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
-import sangcci.springsecuritytest.auth.application.JwtProvider;
+import sangcci.springsecuritytest.auth.util.JwtProvider;
 import sangcci.springsecuritytest.auth.filter.JwtAuthenticationFilter;
 import sangcci.springsecuritytest.auth.filter.JwtAuthorizationFilter;
 import sangcci.springsecuritytest.auth.oauth2.application.CustomOAuth2UserService;
 import sangcci.springsecuritytest.auth.oauth2.handler.OAuth2LoginFailureHandler;
 import sangcci.springsecuritytest.auth.oauth2.handler.OAuth2LoginSuccessHandler;
-import sangcci.springsecuritytest.auth.presentation.CustomAccessDeniedHandler;
-import sangcci.springsecuritytest.auth.presentation.CustomAuthenticationEntryPoint;
-import sangcci.springsecuritytest.auth.presentation.LoginFailureHandler;
-import sangcci.springsecuritytest.auth.presentation.LoginSuccessHandler;
+import sangcci.springsecuritytest.auth.handler.CustomAccessDeniedHandler;
+import sangcci.springsecuritytest.auth.handler.CustomAuthenticationEntryPoint;
+import sangcci.springsecuritytest.auth.handler.LoginFailureHandler;
+import sangcci.springsecuritytest.auth.handler.LoginSuccessHandler;
 
 @Configuration
 @EnableMethodSecurity
@@ -88,6 +88,7 @@ public class SecurityConfig {
 
         http
                 .oauth2Login(customConfigurer -> customConfigurer
+                        .authorizationEndpoint(end -> end.baseUri("/api/v1/oauth2/login"))
                         .userInfoEndpoint(endPointConfig -> endPointConfig.userService(customOAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)
                         .failureHandler(oAuth2LoginFailureHandler));

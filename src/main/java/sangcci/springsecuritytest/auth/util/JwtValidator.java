@@ -1,4 +1,4 @@
-package sangcci.springsecuritytest.auth.application;
+package sangcci.springsecuritytest.auth.util;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
