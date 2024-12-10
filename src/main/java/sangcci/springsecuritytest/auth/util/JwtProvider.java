@@ -10,10 +10,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@Getter
 public class JwtProvider {
 
     private final long ACCESS_TIME;
-    @Getter
     private final long REFRESH_TIME;
 
     private final SecretKey secretKey;

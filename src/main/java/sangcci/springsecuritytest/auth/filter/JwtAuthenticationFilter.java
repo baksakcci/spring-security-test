@@ -1,56 +1,90 @@
 package sangcci.springsecuritytest.auth.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.text.MessageFormat;
-import org.springframework.security.authentication.AuthenticationServiceException;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
-import sangcci.springsecuritytest.auth.request.LoginRequest;
+import org.springframework.web.filter.OncePerRequestFilter;
+import sangcci.springsecuritytest.auth.util.JwtParser;
+import sangcci.springsecuritytest.auth.util.JwtValidator;
 
 @Component
-public class JwtAuthenticationFilter extends AbstractAuthenticationProcessingFilter {
+@RequiredArgsConstructor
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final AntPathRequestMatcher PATH_REQUEST_MATCHER = new AntPathRequestMatcher("/api/auth/login", "POST");
+    private static final List<RequestMatcher> EXCLUDED_URL_MATCHERS = List.of(
+            new AntPathRequestMatcher("/h2-console/**"),
+            new AntPathRequestMatcher("/api/v1/oauth2/login/**"),
+            new AntPathRequestMatcher("/login/oauth2/**")
+    );
 
-    private final ObjectMapper objectMapper;
+    private final JwtParser jwtParser;
+    private final JwtValidator jwtValidator;
+    private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter() {
-        super(PATH_REQUEST_MATCHER);
-        this.objectMapper = new ObjectMapper();
+    /**
+     * JWT 토큰을 검증하는 메서드
+     */
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+        // JWT 인가 과정 필요없는 URL 제외
+        if (isExcluded(request)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // request로부터 token 받기
+        String refreshToken = jwtParser.getRefreshToken(request);
+        String accessToken = jwtParser.getAccessToken(request);
+
+        // token 검증 수행
+        if (accessToken != null) {
+            jwtValidator.validateToken(accessToken);
+            String email = jwtParser.extractEmail(accessToken);
+            setAuthenication(email, request);
+        }
+
+        if (accessToken == null && refreshToken != null) {
+            // TODO: refreshToken validation 적용
+
+            String email = jwtParser.extractEmail(refreshToken);
+            setAuthenication(email, request);
+        }
+
+        filterChain.doFilter(request, response);
     }
 
-    @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
-            throws AuthenticationException, IOException {
-        // 1 - contentType 체크
-        validateContentType(request);
+    private boolean isExcluded(HttpServletRequest request) {
+        return EXCLUDED_URL_MATCHERS.stream()
+                .anyMatch(matcher -> matcher.matches(request));
+    }
 
-        // 2 - Json to String parsing
-        LoginRequest loginRequest = objectMapper.readValue(request.getInputStream(), LoginRequest.class);
+    private void setAuthenication(String email, HttpServletRequest request) {
+        // member db 확인
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        // 3 - usernamePasswordAuthenticationToken 생성
-        UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                loginRequest.username(),
-                loginRequest.password()
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities()
         );
 
-        // 4 - authenticationManager 인증 후 반환
-        return this.getAuthenticationManager().authenticate(usernamePasswordAuthenticationToken);
-    }
+        // add info (default - remote ip address, session id)
+        authenticationToken.setDetails(
+                new WebAuthenticationDetailsSource().buildDetails(request)
+        );
 
-    private void validateContentType(HttpServletRequest request) {
-        String contentType = request.getContentType();
-
-        if (contentType == null || contentType.equals("application/json")) {
-            throw new AuthenticationServiceException(
-                    MessageFormat.format("ContentType이 {}가 아닙니다", request.getContentType()));
-        }
+        // Context Holder 저장
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 }

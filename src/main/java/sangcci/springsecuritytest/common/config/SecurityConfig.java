@@ -21,8 +21,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import sangcci.springsecuritytest.auth.exception.JwtExceptionFilter;
+import sangcci.springsecuritytest.auth.filter.PasswordAuthenticationFilter;
 import sangcci.springsecuritytest.auth.filter.JwtAuthenticationFilter;
-import sangcci.springsecuritytest.auth.filter.JwtAuthorizationFilter;
 import sangcci.springsecuritytest.auth.handler.CustomAccessDeniedHandler;
 import sangcci.springsecuritytest.auth.handler.CustomAuthenticationEntryPoint;
 import sangcci.springsecuritytest.auth.handler.LoginFailureHandler;
@@ -43,7 +43,7 @@ public class SecurityConfig {
     // JWT
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
-    private final JwtAuthorizationFilter jwtAuthorizationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtExceptionFilter jwtExceptionFilter;
     // OAuth2
     private final CustomOAuth2UserService customOAuth2UserService;
@@ -60,7 +60,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, PasswordAuthenticationFilter passwordAuthenticationFilter) throws Exception {
         http
                 .csrf(CsrfConfigurer<HttpSecurity>::disable)
                 .formLogin(FormLoginConfigurer<HttpSecurity>::disable)
@@ -89,15 +89,15 @@ public class SecurityConfig {
 
         // jwt 인증 및 인가 필터
         http
-                .addFilterBefore(jwtAuthenticationFilter, OAuth2LoginAuthenticationFilter.class)
-                .addFilterAfter(jwtAuthorizationFilter, JwtAuthenticationFilter.class);
+                .addFilterBefore(passwordAuthenticationFilter, OAuth2LoginAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, PasswordAuthenticationFilter.class);
         http
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(customAuthenticationEntryPoint))
                 .exceptionHandling(exception -> exception.accessDeniedHandler(customAccessDeniedHandler));
 
         // jwt validation exception 처리 전용 필터
         http
-                .addFilterBefore(jwtExceptionFilter, JwtAuthorizationFilter.class);
+                .addFilterBefore(jwtExceptionFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }
@@ -121,11 +121,11 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter(
+    public PasswordAuthenticationFilter passwordAuthenticationFilter(
             AuthenticationManager authenticationManager,
             JwtProvider jwtProvider
     ) {
-        JwtAuthenticationFilter authenticationFilter = new JwtAuthenticationFilter();
+        PasswordAuthenticationFilter authenticationFilter = new PasswordAuthenticationFilter();
         authenticationFilter.setAuthenticationManager(authenticationManager);
         authenticationFilter.setAuthenticationSuccessHandler(new LoginSuccessHandler(jwtProvider));
         authenticationFilter.setAuthenticationFailureHandler(new LoginFailureHandler());
